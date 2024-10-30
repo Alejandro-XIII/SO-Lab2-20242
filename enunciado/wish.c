@@ -83,11 +83,14 @@ void ejecutarComando(char **args, char **rutas, char *archivo_salida) {
 }
 
 // Función para ejecutar varios comandos en paralelo
+// Función para ejecutar varios comandos en paralelo
 void ejecutarComandosParalelo(char **comandos, char **rutas) {
     char *args[MAX_ARGS];
     char *archivo_salida = NULL;
+    pid_t pid;
+    int i = 0;
 
-    for (int i = 0; comandos[i] != NULL; i++) {
+    for (i = 0; comandos[i] != NULL; i++) {
         // Parsear el comando individual
         int idx = 0;
         char *token = strtok(comandos[i], " \t");
@@ -95,7 +98,7 @@ void ejecutarComandosParalelo(char **comandos, char **rutas) {
         // Si el primer token es NULL, significa que no hay comando
         if (token == NULL) {
             // En este caso, simplemente retornamos 0
-            return; // Esto hará que no se ejecute ningún comando.
+            continue; // Esto hará que no se ejecute ningún comando.
         }
 
         // Guardamos el primer token para verificar si hay un comando
@@ -119,10 +122,18 @@ void ejecutarComandosParalelo(char **comandos, char **rutas) {
 
         // Verificar si hay al menos un comando antes de intentar ejecutarlo
         if (args[0] != NULL && !ejecutarIntegrados(args, rutas)) {
-            // Si no es un comando integrado, ejecutar el comando
-            ejecutarComando(args, rutas, archivo_salida);
+            // Si no es un comando integrado, ejecutar el comando en un nuevo proceso
+            pid = fork();
+            if (pid == 0) {
+                // Proceso hijo
+                ejecutarComando(args, rutas, archivo_salida);
+                exit(0); // Termina el hijo después de ejecutar el comando
+            }
         }
     }
+
+    // Esperar a que todos los procesos hijos terminen
+    while (wait(NULL) > 0);
 }
 
 
